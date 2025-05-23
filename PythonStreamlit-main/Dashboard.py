@@ -158,7 +158,7 @@ DATA_CSV_PATH = "combined_data.csv"
 
 # --- Data Processing Functions ---
 @st.cache_data
-def load_data():
+def load_data():14
     try:
         df = pd.read_csv(DATA_CSV_PATH, parse_dates=["timestamp"], encoding='utf-8')
         # Ensure numeric types
@@ -1071,7 +1071,7 @@ if st.session_state.user_role == "Sales Manager":
                 with col1:
                     if sales_stats:
                         df_sales_stats = pd.DataFrame(sales_stats)
-                        df_sales_stats["country"] = df_sales_stats["country"].apply(get_country_full_name)
+                        df_sales_stats["country"] = df_sales_stats["country"].apply(get_country_full_name)  # Fixed line
                         fig_heatmap = px.density_heatmap(
                             df_sales_stats,
                             x="country",
@@ -1701,38 +1701,25 @@ elif st.session_state.user_role == "Marketing Analyst":
                     )
                     # Update layout for dual y-axes
                     fig.update_layout(
-                        xaxis=dict(showticklabels=True, tickfont=dict(size=8, family="Inter", color="#1f2937")),
                         yaxis=dict(
-                            title=dict(text='Promotional Events', font=dict(size=8, family="Inter", color='#3b82f6')),
-                            tickfont=dict(size=8, family="Inter", color='#3b82f6'),
-                            side='left'
+                            title='Promotional Events',
+                            titlefont=dict(color='#3b82f6'),
+                            tickfont=dict(color='#3b82f6')
                         ),
                         yaxis2=dict(
-                            title=dict(text='Revenue ($)', font=dict(size=8, family="Inter", color='#1e3a8a')),
-                            tickfont=dict(size=8, family="Inter", color='#1e3a8a'),
-                            side='right',
-                            overlaying='y'
-                        ),
-                        margin=dict(t=10, b=10, r=10, l=10),
-                        height=140,
-                        paper_bgcolor="rgba(0,0,0,0)",
-                        plot_bgcolor="rgba(0,0,0,0)",
-                        font=dict(family="Inter", size=8, color="#1f2937"),
-                        legend=dict(
-                            title="",
-                            orientation="v",
-                            x=1,
-                            xanchor="left",
-                            y=0.5,
-                            yanchor="middle",
-                            bgcolor="rgba(255,255,255,0.8)",
-                            font=dict(size=7)
-                        ),
-                        hoverlabel=dict(bgcolor="white", font_size=8, font_family="Inter")
+                            title='Revenue ($)',
+                            titlefont=dict(color='#1e3a8a'),
+                            tickfont=dict(color='#1e3a8a'),
+                            overlaying='y',
+                            side='right'
+                        )
                     )
+                    # Apply consistent styling
                     st.markdown('<div class="visual-container">', unsafe_allow_html=True)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(style_fig(fig), use_container_width=True)
                     st.markdown('</div>', unsafe_allow_html=True)
+                    
+                    # Export data button
                     if st.button("Export Promotional Trends Data", key="export_promo_trends"):
                         export_data = df_merged.to_csv(index=False)
                         st.download_button(
@@ -1744,85 +1731,6 @@ elif st.session_state.user_role == "Marketing Analyst":
                 else:
                     st.info("No overlapping promotional event and sales data available for the selected filters.")
             else:
-                st.info("No promotional event data available for the selected filters.")
+                st.info("No promotional event data available in web trends.")
         else:
-            st.info("No promotional trends or sales data available for the selected filters.")
-
-    with tabs[5]:
-        st.subheader("Product Metrics")
-        if sales:
-            df_sales_metrics = pd.DataFrame(sales)
-            df_sales_metrics["country"] = df_sales_metrics["country"].apply(get_country_full_name)
-            # Calculate YoY growth (assuming data spans multiple years)
-            df_sales_metrics['year'] = pd.to_datetime(df_trends['timestamp']).dt.year if trends else 2023
-            df_yoy = df_sales_metrics.groupby(['product', 'year']).agg({
-                'revenue': 'sum',
-                'sales_count': 'sum'
-            }).reset_index()
-            df_yoy = df_yoy.sort_values(['product', 'year'])
-            df_yoy['revenue_growth'] = df_yoy.groupby('product')['revenue'].pct_change() * 100
-            df_yoy['sales_growth'] = df_yoy.groupby('product')['sales_count'].pct_change() * 100
-            df_yoy = df_yoy.dropna()
-
-            col1, col2 = st.columns(2)
-            with col1:
-                # Bar chart for average revenue by product
-                fig_avg = px.bar(
-                    df_sales_metrics,
-                    x="product",
-                    y="revenue",
-                    color="country",
-                    barmode="group",
-                    title="Average Revenue by Product",
-                    color_discrete_sequence=px.colors.qualitative.Pastel
-                )
-                st.markdown('<div class="visual-container">', unsafe_allow_html=True)
-                st.plotly_chart(style_fig(fig_avg), use_container_width=True)
-                st.markdown('</div>', unsafe_allow_html=True)
-
-            with col2:
-                # Line chart for YoY revenue growth
-                if not df_yoy.empty:
-                    fig_yoy = px.line(
-                        df_yoy,
-                        x="year",
-                        y="revenue_growth",
-                        color="product",
-                        title="YoY Revenue Growth (%)",
-                        color_discrete_sequence=px.colors.qualitative.Set2
-                    )
-                    st.markdown('<div class="visual-container">', unsafe_allow_html=True)
-                    st.plotly_chart(style_fig(fig_yoy), use_container_width=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                else:
-                    st.info("Insufficient data for YoY growth analysis.")
-
-            # Display metrics table
-            st.markdown('<div class="visual-container">', unsafe_allow_html=True)
-            with st.expander("View Product Metrics"):
-                st.dataframe(
-                    df_sales_metrics.groupby('product').agg({
-                        'sales_count': 'sum',
-                        'revenue': 'mean',
-                        'profit': 'mean'
-                    }).reset_index(),
-                    column_config={
-                        "product": "Product",
-                        "sales_count": st.column_config.NumberColumn("Total Sales", format="%d"),
-                        "revenue": st.column_config.NumberColumn("Avg. Revenue", format="$%.2f"),
-                        "profit": st.column_config.NumberColumn("Avg. Profit", format="$%.2f")
-                    },
-                    use_container_width=True
-                )
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            if st.button("Export Product Metrics Data", key="export_product_metrics"):
-                export_data = df_sales_metrics.to_csv(index=False)
-                st.download_button(
-                    label="Download CSV",
-                    data=export_data,
-                    file_name=f"product_metrics_data_{st.session_state.export_id}.csv",
-                    mime="text/csv"
-                )
-        else:
-            st.info("No product metrics data available for the selected filters.")
+            st.info("No promotional event or sales trend data available for the selected filters.")
