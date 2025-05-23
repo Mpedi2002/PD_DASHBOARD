@@ -158,7 +158,7 @@ DATA_CSV_PATH = "combined_data.csv"
 
 # --- Data Processing Functions ---
 @st.cache_data
-def load_data():14
+def load_data():
     try:
         df = pd.read_csv(DATA_CSV_PATH, parse_dates=["timestamp"], encoding='utf-8')
         # Ensure numeric types
