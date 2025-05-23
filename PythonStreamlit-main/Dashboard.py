@@ -159,6 +159,7 @@ TEAM_YEARLY_TARGET = YEARLY_TARGET * 5  # For 5 salespeople
 DATA_CSV_PATH = os.path.join(os.path.dirname(__file__), "combined_data.csv")
 
 
+
 # --- Data Processing Functions ---
 @st.cache_data
 def load_data():
@@ -1708,18 +1709,14 @@ elif st.session_state.user_role == "Marketing Analyst":
                             tickfont=dict(size=8, family="Inter", color="#1f2937")
                         ),
                         yaxis=dict(
-                            title=dict(
-                                text='Promotional Events',
-                                font=dict(size=8, family="Inter", color='#3b82f6')
-                            ),
+                            title='Promotional Events',
+                            titlefont=dict(size=8, family="Inter", color='#3b82f6'),
                             tickfont=dict(size=8, family="Inter", color='#3b82f6'),
                             side='left'
                         ),
                         yaxis2=dict(
-                            title=dict(
-                                text='Revenue ($)',
-                                font=dict(size=8, family="Inter", color='#1e3a8a')
-                            ),
+                            title='Revenue ($)',
+                            titlefont=dict(size=8, family="Inter", color='#1e3a8a'),
                             tickfont=dict(size=8, family="Inter", color='#1e3a8a'),
                             side='right',
                             overlaying='y'
