@@ -159,7 +159,6 @@ TEAM_YEARLY_TARGET = YEARLY_TARGET * 5  # For 5 salespeople
 DATA_CSV_PATH = os.path.join(os.path.dirname(__file__), "combined_data.csv")
 
 
-
 # --- Data Processing Functions ---
 @st.cache_data
 def load_data():
