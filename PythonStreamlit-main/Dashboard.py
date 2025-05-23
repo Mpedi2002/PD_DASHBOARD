@@ -154,7 +154,8 @@ if "active_subtab" not in st.session_state:
 PRODUCTS = ["AI Assistant", "Smart Prototype", "Analytics Suite"]
 YEARLY_TARGET = 120000  # Per salesperson
 TEAM_YEARLY_TARGET = YEARLY_TARGET * 5  # For 5 salespeople
-DATA_CSV_PATH = "combined_data.csv"
+DATA_CSV_PATH = os.path.join(os.path.dirname(__file__), "combined_data.csv")
+
 
 # --- Data Processing Functions ---
 @st.cache_data
