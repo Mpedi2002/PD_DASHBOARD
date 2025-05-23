@@ -4,7 +4,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, time, timedelta
 import pycountry
-import uuid
+import random
+import string
 
 # --- Configuration & Styles ---
 st.set_page_config(page_title="AI Solutions Dashboard", page_icon="📊", layout="wide")
@@ -141,7 +142,7 @@ st.markdown(
 
 # --- Initialize Session State ---
 if "export_id" not in st.session_state:
-    st.session_state.export_id = str(uuid.uuid4())
+    st.session_state.export_id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=32))
 if "user_role" not in st.session_state:
     st.session_state.user_role = "Sales Manager"
 if "active_tab" not in st.session_state:
