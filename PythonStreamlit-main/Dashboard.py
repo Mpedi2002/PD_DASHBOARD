@@ -1706,22 +1706,22 @@ elif st.session_state.user_role == "Marketing Analyst":
                     fig.update_layout(
                         xaxis=dict(
                             showticklabels=True,
-                            tickfont=dict(size=8, family="Inter", color="#1f2937")
+                            tickfont=dict(size=8, family="Arial", color="#1f2937")
                         ),
                         yaxis=dict(
                             title=dict(
                                 text='Promotional Events',
-                                font=dict(size=8, family="Inter", color='#3b82f6')
+                                font=dict(size=8, family="Arial", color='#3b82f6')
                             ),
-                            tickfont=dict(size=8, family="Inter", color='#3b82f6'),
+                            tickfont=dict(size=8, family="Arial", color='#3b82f6'),
                             side='left'
                         ),
                         yaxis2=dict(
                             title=dict(
                                 text='Revenue ($)',
-                                font=dict(size=8, family="Inter", color='#1e3a8a')
+                                font=dict(size=8, family="Arial", color='#1e3a8a')
                             ),
-                            tickfont=dict(size=8, family="Inter", color='#1e3a8a'),
+                            tickfont=dict(size=8, family="Arial", color='#1e3a8a'),
                             side='right',
                             overlaying='y'
                         ),
@@ -1729,18 +1729,17 @@ elif st.session_state.user_role == "Marketing Analyst":
                         height=140,
                         paper_bgcolor="rgba(0,0,0,0)",
                         plot_bgcolor="rgba(0,0,0,0)",
-                        font=dict(family="Inter", size=8, color="#1f2937"),
+                        font=dict(family="Arial", size=8, color="#1f2937"),
                         legend=dict(
-                            title="",
                             orientation="v",
                             x=1,
                             xanchor="left",
                             y=0.5,
                             yanchor="middle",
                             bgcolor="rgba(255,255,255,0.8)",
-                            font=dict(size=7)
+                            font=dict(size=7, family="Arial")
                         ),
-                        hoverlabel=dict(bgcolor="white", font_size=8, font_family="Inter")
+                        hoverlabel=dict(bgcolor="white", font_size=8, font_family="Arial")
                     )
                     st.markdown('<div class="visual-container">', unsafe_allow_html=True)
                     st.plotly_chart(fig, use_container_width=True)
