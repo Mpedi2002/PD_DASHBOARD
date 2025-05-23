@@ -1690,7 +1690,6 @@ elif st.session_state.user_role == "Marketing Analyst":
                             y=df_merged['promotional_event'],
                             name='Promotional Events',
                             line=dict(color='#3b82f6'),
-                            yaxis='y1'
                         )
                     )
                     # Plot revenue (right y-axis)
@@ -1705,14 +1704,23 @@ elif st.session_state.user_role == "Marketing Analyst":
                     )
                     # Update layout for dual y-axes
                     fig.update_layout(
-                        xaxis=dict(showticklabels=True, tickfont=dict(size=8, family="Inter", color="#1f2937")),
+                        xaxis=dict(
+                            showticklabels=True,
+                            tickfont=dict(size=8, family="Inter", color="#1f2937")
+                        ),
                         yaxis=dict(
-                            title=dict(text='Promotional Events', font=dict(size=8, family="Inter", color='#3b82f6')),
+                            title=dict(
+                                text='Promotional Events',
+                                font=dict(size=8, family="Inter", color='#3b82f6')
+                            ),
                             tickfont=dict(size=8, family="Inter", color='#3b82f6'),
                             side='left'
                         ),
                         yaxis2=dict(
-                            title=dict(text='Revenue ($)', font=dict(size=8, family="Inter", color='#1e3a8a')),
+                            title=dict(
+                                text='Revenue ($)',
+                                font=dict(size=8, family="Inter", color='#1e3a8a')
+                            ),
                             tickfont=dict(size=8, family="Inter", color='#1e3a8a'),
                             side='right',
                             overlaying='y'
@@ -1811,10 +1819,10 @@ elif st.session_state.user_role == "Marketing Analyst":
                         'profit': 'mean'
                     }).reset_index(),
                     column_config={
-                        "product": "Product",
-                        "sales_count": st.column_config.NumberColumn("Total Sales", format="%d"),
-                        "revenue": st.column_config.NumberColumn("Avg. Revenue", format="$%.2f"),
-                        "profit": st.column_config.NumberColumn("Avg. Profit", format="$%.2f")
+                        'product': 'Product',
+                        'sales_count': st.column_config.NumberColumn('Total Sales', format='%d'),
+                        'revenue': st.column_config.NumberColumn('Avg. Revenue', format='$%.2f'),
+                        'profit': st.column_config.NumberColumn('Avg. Profit', format='$%.2f')
                     },
                     use_container_width=True
                 )
