@@ -5,7 +5,6 @@ import plotly.graph_objects as go
 from datetime import datetime, time, timedelta
 import pycountry
 import uuid
-import scipy.stats
 
 # --- Configuration & Styles ---
 st.set_page_config(page_title="AI Solutions Dashboard", page_icon="📊", layout="wide")
@@ -973,7 +972,7 @@ if st.session_state.user_role == "Sales Manager":
         else:
             st.info("No profit margin data available for the selected filters.")
 
-    with tabs[4]:
+    with tabs[4]:  # Sales Team Analysis (Sales Manager)
         st.subheader("Sales Team Analysis")
         if salesperson_comparison.get("individuals") and salesperson_comparison.get("team"):
             df_individual = pd.DataFrame(salesperson_comparison["individuals"])
@@ -1071,7 +1070,7 @@ if st.session_state.user_role == "Sales Manager":
                 with col1:
                     if sales_stats:
                         df_sales_stats = pd.DataFrame(sales_stats)
-                        df_sales_stats["country"] = df_sales_stats["country"].apply(get_country_full_name)
+                        df_sales_stats["country"] = df_sales_stats["country"].apply(get_country_full_name)  # Fixed line
                         fig_heatmap = px.density_heatmap(
                             df_sales_stats,
                             x="country",
@@ -1146,7 +1145,6 @@ if st.session_state.user_role == "Sales Manager":
                 )
         else:
             st.info("No sales team analysis data available for the selected filters.")
-
 elif st.session_state.user_role == "Regional Sales Rep":
     tab_labels = ["Overview", "Regional Sales", "Top Customers", "Sales Team Analysis"]
     tabs = st.tabs(tab_labels)
@@ -1164,7 +1162,7 @@ elif st.session_state.user_role == "Regional Sales Rep":
         expected_ai = 150
         metrics = [
             ("Sales", "fas fa-shopping-cart", f"{sales_count:,}", sales_count / expected_sales * 100),
-            ("Demo Requests", "fas successful conversion rate to sales fa-user-check", f"{demo_requests:,}", demo_requests / expected_demos * 100),
+            ("Demo Requests", "fas fa-user-check", f"{demo_requests:,}", demo_requests / expected_demos * 100),
             ("AI Requests", "fas fa-robot", f"{ai_requests:,}", ai_requests / expected_ai * 100),
             ("Target Achievement", "fas fa-bullseye", f"{target_achievement:.1f}%", target_achievement),
         ]
@@ -1666,185 +1664,72 @@ elif st.session_state.user_role == "Marketing Analyst":
             st.info("No campaign performance data available for the selected filters.")
 
     with tabs[4]:
-        st.subheader("Promotional Event Correlation with Sales")
+        st.subheader("Promotional Event Trends with Sales")
         if web_trends and trends:
             df_web_trends = pd.DataFrame(web_trends)
             df_trends = pd.DataFrame(trends)
             if 'promotional_event' in df_web_trends.columns:
+                # Prepare data: align timestamps to monthly periods
                 df_promo = df_web_trends[['timestamp', 'promotional_event']].copy()
                 df_promo['timestamp'] = pd.to_datetime(df_promo['timestamp']).dt.to_period('M').dt.to_timestamp()
                 df_trends['timestamp'] = pd.to_datetime(df_trends['timestamp']).dt.to_period('M').dt.to_timestamp()
                 df_merged = pd.merge(df_promo, df_trends, on='timestamp', how='inner')
+                
                 if not df_merged.empty:
-                    correlation, p_value = scipy.stats.pearsonr(df_merged['promotional_event'], df_merged['revenue'])
-                    st.markdown(f"**Correlation Coefficient**: {correlation:.2f} (p-value: {p_value:.4f})")
-                    st.markdown(
-                        """
-                        - Correlation ranges from -1 to 1. Positive values indicate that promotional events are associated with higher sales.
-                        - p-value < 0.05 suggests statistical significance.
-                        """
-                    )
-                    fig = px.scatter(
-                        df_merged,
-                        x="promotional_event",
-                        y="revenue",
-                        labels={"promotional_event": "Promotional Event Count", "revenue": "Revenue ($)"},
-                        color_discrete_sequence=["#3b82f6"],
-                    )
-                    st.markdown('<div class="visual-container">', unsafe_allow_html=True)
-                    st.plotly_chart(style_fig(fig, height=200), use_container_width=True)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    # Continuation from the interrupted section in the Promotional Event Correlation with Sales tab
-                    fig_time = go.Figure()
-                    fig_time.add_trace(
+                    # Create dual-axis plot
+                    fig = go.Figure()
+                    # Plot promotional events (left y-axis)
+                    fig.add_trace(
                         go.Scatter(
-                            x=df_merged["timestamp"],
-                            y=df_merged["promotional_event"],
-                            name="Promotional Events",
-                            line=dict(color="#3b82f6"),
+                            x=df_merged['timestamp'],
+                            y=df_merged['promotional_event'],
+                            name='Promotional Events',
+                            line=dict(color='#3b82f6'),
+                            yaxis='y1'
                         )
                     )
-                    fig_time.add_trace(
+                    # Plot revenue (right y-axis)
+                    fig.add_trace(
                         go.Scatter(
-                            x=df_merged["timestamp"],
-                            y=df_merged["revenue"],
-                            name="Revenue",
-                            line=dict(color="#1e3a8a"),
-                            yaxis="y2",
+                            x=df_merged['timestamp'],
+                            y=df_merged['revenue'],
+                            name='Revenue',
+                            line=dict(color='#1e3a8a'),
+                            yaxis='y2'
                         )
                     )
-                    fig_time.update_layout(
-                        yaxis=dict(title="Promotional Event Count", side="left"),
-                        yaxis2=dict(title="Revenue ($)", side="right", overlaying="y"),
+                    # Update layout for dual y-axes
+                    fig.update_layout(
+                        yaxis=dict(
+                            title='Promotional Events',
+                            titlefont=dict(color='#3b82f6'),
+                            tickfont=dict(color='#3b82f6')
+                        ),
+                        yaxis2=dict(
+                            title='Revenue ($)',
+                            titlefont=dict(color='#1e3a8a'),
+                            tickfont=dict(color='#1e3a8a'),
+                            overlaying='y',
+                            side='right'
+                        )
                     )
+                    # Apply consistent styling
                     st.markdown('<div class="visual-container">', unsafe_allow_html=True)
-                    st.plotly_chart(style_fig(fig_time, height=200), use_container_width=True)
+                    st.plotly_chart(style_fig(fig), use_container_width=True)
                     st.markdown('</div>', unsafe_allow_html=True)
-                    if st.button("Export Promotional Correlation Data", key="export_promo"):
+                    
+                    # Export data button
+                    if st.button("Export Promotional Trends Data", key="export_promo_trends"):
                         export_data = df_merged.to_csv(index=False)
                         st.download_button(
                             label="Download CSV",
                             data=export_data,
-                            file_name=f"promo_correlation_data_{st.session_state.export_id}.csv",
-                            mime="text/csv",
+                            file_name=f"promo_trends_data_{st.session_state.export_id}.csv",
+                            mime="text/csv"
                         )
                 else:
                     st.info("No overlapping promotional event and sales data available for the selected filters.")
             else:
-                st.info("No promotional event data available for correlation analysis.")
+                st.info("No promotional event data available in web trends.")
         else:
             st.info("No promotional event or sales trend data available for the selected filters.")
-
-    with tabs[5]:
-        st.subheader("Product Metrics")
-        if sales:
-            df_sales_metrics = pd.DataFrame(sales)
-            df_sales_metrics["country"] = df_sales_metrics["country"].apply(get_country_full_name)
-            # Calculate average sales and growth rate
-            df_sales_metrics["avg_sales"] = df_sales_metrics["sales_count"] / len(df_sales_metrics["country"].unique())
-            # Simulate YoY growth (assuming data spans multiple years)
-            df_trends = pd.DataFrame(trends)
-            if not df_trends.empty:
-                df_trends["year"] = pd.to_datetime(df_trends["timestamp"]).dt.year
-                df_yearly = df_trends.groupby("year")["revenue"].sum().reset_index()
-                df_yearly["yoy_growth"] = df_yearly["revenue"].pct_change() * 100
-                df_yearly = df_yearly.dropna()
-                avg_yoy_growth = df_yearly["yoy_growth"].mean() if not df_yearly.empty else 0
-            else:
-                avg_yoy_growth = 0
-
-            col1, col2 = st.columns([3, 2])
-            with col1:
-                st.markdown('<div class="visual-container">', unsafe_allow_html=True)
-                fig_product = px.bar(
-                    df_sales_metrics,
-                    x="product",
-                    y="revenue",
-                    color="country",
-                    barmode="group",
-                    title="Revenue by Product and Country",
-                    color_discrete_sequence=px.colors.qualitative.Pastel,
-                )
-                st.plotly_chart(style_fig(fig_product, height=200), use_container_width=True)
-                st.markdown('</div>', unsafe_allow_html=True)
-
-            with col2:
-                st.markdown('<div class="visual-container">', unsafe_allow_html=True)
-                st.markdown('<div class="metrics-container">', unsafe_allow_html=True)
-                total_revenue = df_sales_metrics["revenue"].sum()
-                avg_sales = df_sales_metrics["avg_sales"].mean()
-                metrics = [
-                    (
-                        "Total Revenue",
-                        "fas fa-dollar-sign",
-                        f"${total_revenue:,.0f}",
-                        total_revenue / YEARLY_TARGET * 100,
-                    ),
-                    (
-                        "Avg Sales per Country",
-                        "fas fa-shopping-cart",
-                        f"{avg_sales:.1f}",
-                        avg_sales / 100 * 100,
-                    ),
-                    (
-                        "YoY Growth",
-                        "fas fa-chart-line",
-                        f"{avg_yoy_growth:.1f}%",
-                        avg_yoy_growth,
-                        10,
-                        5,
-                    ),
-                ]
-                for lbl, icon, val, value, *thresholds in metrics:
-                    color, status_icon = get_kpi_color(value, *thresholds)
-                    st.markdown(
-                        f"""
-                        <div class="metric-card {color}">
-                            <div style="display: flex; justify-content: space-between;">
-                                <i class="{icon}" style="font-size:0.9rem;color:var(--secondary-color)"></i>
-                                <i class="fas {status_icon}" style="font-size:0.9rem;color:{color}"></i>
-                            </div>
-                            <div style="font-weight:600;font-size:0.7rem">{lbl}</div>
-                            <div style="font-size:0.8rem;font-weight:700">{val}</div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-                st.markdown('</div>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
-
-            st.markdown('<div class="visual-container">', unsafe_allow_html=True)
-            with st.expander("View Detailed Product Metrics"):
-                st.dataframe(
-                    df_sales_metrics[[
-                        "country",
-                        "product",
-                        "sales_count",
-                        "revenue",
-                        "profit",
-                        "avg_sales",
-                    ]],
-                    column_config={
-                        "country": "Country",
-                        "product": "Product",
-                        "sales_count": "Sales Count",
-                        "revenue": st.column_config.NumberColumn("Revenue", format="$%.2f"),
-                        "profit": st.column_config.NumberColumn("Profit", format="$%.2f"),
-                        "avg_sales": st.column_config.NumberColumn("Avg Sales", format="%.1f"),
-                    },
-                    use_container_width=True,
-                )
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            if st.button("Export Product Metrics Data", key="export_product_metrics"):
-                export_data = df_sales_metrics.to_csv(index=False)
-                st.download_button(
-                    label="Download CSV",
-                    data=export_data,
-                    file_name=f"product_metrics_data_{st.session_state.export_id}.csv",
-                    mime="text/csv",
-                )
-        else:
-            st.info("No product metrics data available for the selected filters.")
-
-# --- End of Marketing Analyst Role ---
