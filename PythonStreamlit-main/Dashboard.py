@@ -4,8 +4,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, time, timedelta
 import pycountry
-import random
-import string
+import uuid
+import scipy.stats
 
 # --- Configuration & Styles ---
 st.set_page_config(page_title="AI Solutions Dashboard", page_icon="📊", layout="wide")
@@ -142,7 +142,7 @@ st.markdown(
 
 # --- Initialize Session State ---
 if "export_id" not in st.session_state:
-    st.session_state.export_id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=32))
+    st.session_state.export_id = str(uuid.uuid4())
 if "user_role" not in st.session_state:
     st.session_state.user_role = "Sales Manager"
 if "active_tab" not in st.session_state:
@@ -156,7 +156,7 @@ YEARLY_TARGET = 120000  # Per salesperson
 TEAM_YEARLY_TARGET = YEARLY_TARGET * 5  # For 5 salespeople
 DATA_CSV_PATH = "combined_data.csv"
 
-# --- Data Processing Functions ---
+# --- Load and Preprocess Data ---
 @st.cache_data
 def load_data():
     try:
@@ -177,6 +177,7 @@ def load_data():
         st.error(f"Failed to load data: {e}")
         return pd.DataFrame()
 
+# --- Data Processing Functions ---
 def filter_df(data, start_date, end_date, countries, product=None):
     try:
         filtered = data.copy()
@@ -239,38 +240,6 @@ def get_web_events(df, start_date, end_date, countries):
     except Exception:
         return []
 
-def get_metrics(df, start_date, end_date, countries):
-    try:
-        filtered = filter_df(df, start_date, end_date, countries)
-        if filtered.empty:
-            return {
-                "total_sales": 0,
-                "total_revenue": 0.0,
-                "total_profit": 0.0,
-                "demo_requests": 0,
-                "promo_requests": 0,
-                "ai_requests": 0
-            }
-        sales = filtered[filtered['event_type'] == 'sale']
-        web = filtered[filtered['event_type'] == 'web']
-        return {
-            "total_sales": int(sales.shape[0]),
-            "total_revenue": float(sales['revenue'].sum()),
-            "total_profit": float(sales['profit'].sum()),
-            "demo_requests": int(web[web['url'] == '/request-demo'].shape[0]),
-            "promo_requests": int(web[web['url'] == '/promotional-event'].shape[0]),
-            "ai_requests": int(web[web['url'] == '/ai-assistant'].shape[0])
-        }
-    except Exception:
-        return {
-            "total_sales": 0,
-            "total_revenue": 0.0,
-            "total_profit": 0.0,
-            "demo_requests": 0,
-            "promo_requests": 0,
-            "ai_requests": 0
-        }
-
 def get_stats(df, start_date, end_date, countries):
     try:
         filtered = filter_df(df, start_date, end_date, countries)
@@ -292,20 +261,6 @@ def get_stats(df, start_date, end_date, countries):
         return stats.to_dict(orient='records')
     except Exception:
         return []
-
-def get_software_sales(df, start_date, end_date, countries):
-    try:
-        products = ["AI Assistant", "Smart Prototype", "Analytics Suite"]
-        sales_df = df[(df['event_type'] == 'sale') & df['product'].isin(products)]
-        filtered = filter_df(sales_df, start_date, end_date, countries)
-        if filtered.empty:
-            return {"software_sales_count": 0, "software_revenue": 0.0}
-        return {
-            "software_sales_count": int(filtered.shape[0]),
-            "software_revenue": float(filtered['revenue'].sum())
-        }
-    except Exception:
-        return {"software_sales_count": 0, "software_revenue": 0.0}
 
 def get_conversion_funnel(df, start_date, end_date, countries):
     try:
@@ -736,18 +691,16 @@ if not df_sales.empty:
 web = get_web_events(df, params["start_date"], params["end_date"], params["countries"]) or []
 df_web = pd.DataFrame(web)
 
-metrics = get_metrics(df, params["start_date"], params["end_date"], params["countries"]) or {}
 stats_data = get_stats(df, params["start_date"], params["end_date"], params["countries"]) or []
-software_sales = get_software_sales(df, params["start_date"], params["end_date"], params["countries"]) or {}
 funnel = get_conversion_funnel(df, params["start_date"], params["end_date"], params["countries"]) or {}
 trends = get_trends(df, params["start_date"], params["end_date"], params["countries"]) or []
 sales_by_channel = get_sales_by_channel(df, params["start_date"], params["end_date"], params["countries"]) or []
 profit_margin = get_profit_margin(df, params["start_date"], params["end_date"], params["countries"]) or []
 top_customers = get_top_customers(df, params["start_date"], params["end_date"], params["countries"]) or []
 web_trends = get_web_trends(df, params["start_date"], params["end_date"], params["countries"]) or []
-sales_stats = get_sales_stats(df, params["start_date"], params["end_date"], params["countries"]) or []
 salesperson_performance = get_salesperson_performance(df, params["start_date"], params["end_date"], params["countries"]) or []
 salesperson_comparison = get_salesperson_comparison(df, params["start_date"], params["end_date"], params["countries"]) or {}
+sales_stats = get_sales_stats(df, params["start_date"], params["end_date"], params["countries"]) or []
 
 # --- Main App ---
 st.title(f"AI Solutions Analytics Dashboard - {st.session_state.user_role}")
@@ -804,7 +757,6 @@ with st.expander("How to Use the Dashboard", expanded=False):
         """
     )
 
-# --- Role-Based Dashboard ---
 if st.session_state.user_role == "Sales Manager":
     tab_labels = ["Overview", "Trends", "Sales Channels", "Profitability", "Sales Team Analysis"]
     tabs = st.tabs(tab_labels)
@@ -973,7 +925,7 @@ if st.session_state.user_role == "Sales Manager":
         else:
             st.info("No profit margin data available for the selected filters.")
 
-    with tabs[4]:  # Sales Team Analysis (Sales Manager)
+    with tabs[4]:
         st.subheader("Sales Team Analysis")
         if salesperson_comparison.get("individuals") and salesperson_comparison.get("team"):
             df_individual = pd.DataFrame(salesperson_comparison["individuals"])
@@ -1071,7 +1023,7 @@ if st.session_state.user_role == "Sales Manager":
                 with col1:
                     if sales_stats:
                         df_sales_stats = pd.DataFrame(sales_stats)
-                        df_sales_stats["country"] = df_sales_stats["country"].apply(get_country_full_name)  # Fixed line
+                        df_sales_stats["country"] = df_sales_stats["country"].apply(get_country_full_name)
                         fig_heatmap = px.density_heatmap(
                             df_sales_stats,
                             x="country",
@@ -1146,6 +1098,7 @@ if st.session_state.user_role == "Sales Manager":
                 )
         else:
             st.info("No sales team analysis data available for the selected filters.")
+
 elif st.session_state.user_role == "Regional Sales Rep":
     tab_labels = ["Overview", "Regional Sales", "Top Customers", "Sales Team Analysis"]
     tabs = st.tabs(tab_labels)
@@ -1665,72 +1618,82 @@ elif st.session_state.user_role == "Marketing Analyst":
             st.info("No campaign performance data available for the selected filters.")
 
     with tabs[4]:
-        st.subheader("Promotional Event Trends with Sales")
+        st.subheader("Promotional Event Correlation with Sales")
         if web_trends and trends:
             df_web_trends = pd.DataFrame(web_trends)
             df_trends = pd.DataFrame(trends)
             if 'promotional_event' in df_web_trends.columns:
-                # Prepare data: align timestamps to monthly periods
                 df_promo = df_web_trends[['timestamp', 'promotional_event']].copy()
                 df_promo['timestamp'] = pd.to_datetime(df_promo['timestamp']).dt.to_period('M').dt.to_timestamp()
                 df_trends['timestamp'] = pd.to_datetime(df_trends['timestamp']).dt.to_period('M').dt.to_timestamp()
                 df_merged = pd.merge(df_promo, df_trends, on='timestamp', how='inner')
-                
                 if not df_merged.empty:
-                    # Create dual-axis plot
-                    fig = go.Figure()
-                    # Plot promotional events (left y-axis)
-                    fig.add_trace(
-                        go.Scatter(
-                            x=df_merged['timestamp'],
-                            y=df_merged['promotional_event'],
-                            name='Promotional Events',
-                            line=dict(color='#3b82f6'),
-                            yaxis='y1'
-                        )
+                    correlation, p_value = scipy.stats.pearsonr(df_merged['promotional_event'], df_merged['revenue'])
+                    st.markdown(f"**Correlation Coefficient**: {correlation:.2f} (p-value: {p_value:.4f})")
+                    st.markdown(
+                        """
+                        - Correlation ranges from -1 to 1. Positive values indicate that promotional events are associated with higher sales.
+                        - p-value < 0.05 suggests statistical significance.
+                        """
                     )
-                    # Plot revenue (right y-axis)
-                    fig.add_trace(
-                        go.Scatter(
-                            x=df_merged['timestamp'],
-                            y=df_merged['revenue'],
-                            name='Revenue',
-                            line=dict(color='#1e3a8a'),
-                            yaxis='y2'
-                        )
+                    fig = px.scatter(
+                        df_merged,
+                        x="promotional_event",
+                        y="revenue",
+                        labels={"promotional_event": "Promotional Event Count", "revenue": "Revenue ($)"},
+                        color_discrete_sequence=["#3b82f6"],
                     )
-                    # Update layout for dual y-axes
-                    fig.update_layout(
-                        yaxis=dict(
-                            title='Promotional Events',
-                            titlefont=dict(color='#3b82f6'),
-                            tickfont=dict(color='#3b82f6')
-                        ),
-                        yaxis2=dict(
-                            title='Revenue ($)',
-                            titlefont=dict(color='#1e3a8a'),
-                            tickfont=dict(color='#1e3a8a'),
-                            overlaying='y',
-                            side='right'
-                        )
-                    )
-                    # Apply consistent styling
                     st.markdown('<div class="visual-container">', unsafe_allow_html=True)
-                    st.plotly_chart(style_fig(fig), use_container_width=True)
+                    st.plotly_chart(style_fig(fig, height=200), use_container_width=True)
                     st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    # Export data button
-                    if st.button("Export Promotional Trends Data", key="export_promo_trends"):
+                    fig_time = go.Figure()
+                    fig_time.add_trace(
+                        go.Scatter(
+                            x=df_merged["timestamp"],
+                            y=df_merged["promotional_event"],
+                            name="Promotional Events",
+                            line=dict(color="#3b82f6"),
+                        )
+                    )
+                    fig_time.add_trace(
+                        go.Scatter(
+                            x=df_merged["timestamp"],
+                            y=df_merged["revenue"] / df_merged["revenue"].max() * df_merged["promotional_event"].max(),
+                            name="Normalized Revenue",
+                            line=dict(color="#1e3a8a"),
+                        )
+                    )
+                    st.markdown('<div class="visual-container">', unsafe_allow_html=True)
+                    st.plotly_chart(style_fig(fig_time, height=200), use_container_width=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                    if st.button("Export Correlation Data", key="export_correlation"):
                         export_data = df_merged.to_csv(index=False)
                         st.download_button(
                             label="Download CSV",
                             data=export_data,
-                            file_name=f"promo_trends_data_{st.session_state.export_id}.csv",
-                            mime="text/csv"
+                            file_name=f"correlation_data_{st.session_state.export_id}.csv",
+                            mime="text/csv",
                         )
                 else:
-                    st.info("No overlapping promotional event and sales data available for the selected filters.")
+                    st.info("No overlapping data between promotional events and sales for the selected filters.")
             else:
-                st.info("No promotional event data available in web trends.")
+                st.info("No promotional event data available for the selected filters.")
         else:
-            st.info("No promotional event or sales trend data available for the selected filters.")
+            st.info("No promotional event or sales data available for the selected filters.")
+
+    with tabs[5]:
+        st.subheader("Product-Specific Metrics")
+        if sales:
+            df_sales_product = pd.DataFrame(sales)
+            if not df_sales_product.empty:
+                df_product_metrics = df_sales_product.groupby(['product']).agg(
+                    avg_sales_count=('sales_count', 'mean'),
+                    total_revenue=('revenue', 'sum'),
+                    total_sales_count=('sales_count', 'sum')
+                ).reset_index()
+                
+                # For YoY analysis, we need the original sales data with timestamps
+                sales_df = filter_df(df[df['event_type'] == 'sale'], params["start_date"], params["end_date"], params["countries"])
+                if not sales_df.empty:
+                    sales_df = sales_df[sales_df['product'].isin(sel_products)]
+                   
